@@ -1,0 +1,3 @@
+# My Knowledge Base
+
+[[GRUB]] recover/install/wtf

@@ -1,0 +1,85 @@
+# GRUB
+
+### notice:  
+> You probably have GPT partition table!  
+> So you need to target EFI not BIOS
+> 
+> here **sdaX - boot**, **sdaY - root**
+
+## Preparing separate boot partition:  
+if needed format to FAT32:  
+
+    mkfs.fat -F 32 /dev/sdaX
+  
+set part type to EFI System:
+> to check what it is now run **fdisk -l /dev/sda**  
+> if it is *EFI System* you can skip this step
+    
+    fdisk /dev/sda
+    t
+    X
+    1
+  
+## mount root and boot partition:
+
+    mount /dev/sdaY /mnt
+    mount -o bind /dev /mnt/dev
+    mount -o bind /sys /mnt/sys
+    mount -o bind /run /mnt/run
+    mount -o bind /proc /mnt/proc
+    mount /dev/sdaX /mnt/boot/efi
+> *mount /dev/sdaX /mnt/boot/efi*  
+> this part may vary, check fstab of system you're reparing (*/mnt/etc/fstab*)  
+> there should be entry like this:  
+>
+>     UUID=0FA7-F85D      	/boot/efi 	vfat      	rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro	0 2
+>
+> notice mount path after partition UUID 
+ 
+## chroot  
+
+    chroot /mnt
+  
+### note:  
+there's a package in AUR **arch-install-scripts** which contains **arch-chroot** util  
+it's also present in Arch install ISO  
+**Use arch-chroot instead, if you can**
+
+## GRUB  
+install grub:  
+
+    grub-install /dev/sda
+  
+make config:
+
+    grub-mkconfig -o /boot/grub/grub.cfg
+
+> it takes /etc/default/grub  
+> you may want to set 
+>
+>     GRUB_DISABLE_OS_PROBE=false
+>
+> if you want to auto detect other OSs
+
+## Check fstab  
+If you did the formating section, you **need** to do this  
+If you're not sure, just check UUID in fstab and *lsblk -f*
+
+> if you have arch-install-scripts you can use **genfstab**  
+>
+>     genfstab -U > /etc/fstab
+
+get UUID of your boot partition:
+
+    lsblk -f
+    
+check if it matches UUID from fstab:
+
+    cat /etc/fstab
+    
+if not - just replace it with one from *lsblk -f*  
+#### DO THIS FOR EVERY SYSTEM YOU HAVE ON MACHINE  
+#### mount their roots, go to */etc/fstab* and change UUID of boot partition!
+
+## Summary
+grub is a pain in the ass to set up properly.
